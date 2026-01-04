@@ -83,7 +83,7 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
     // 4️⃣ Retrieve top-K chunks (RAG CORE)
     const topChunks = embeddedChunks
       .map(c => ({
-        text: c.text,
+        text: c.text,                            //RAG model
         score: cosineSimilarity(queryEmbedding, c.embedding),
       }))
       .sort((a, b) => b.score - a.score)
