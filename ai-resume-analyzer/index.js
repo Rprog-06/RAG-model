@@ -7,7 +7,7 @@ import multer from "multer";
 import pdfParse from "pdf-parse";
 import axios from "axios";
 import dotenv from "dotenv";
-import { pipeline } from "@xenova/transformers";
+// import { pipeline } from "@xenova/transformers";
 
 dotenv.config();
 
@@ -28,39 +28,51 @@ const upload = multer();
 
 const VERTEX_API_KEY = process.env.VERTEX_API_KEY;
 console.log("API KEY FOUND?", !!VERTEX_API_KEY);
-let embedderPromise = null;
+// let embedderPromise = null;
 
-async function loadEmbedder() {
-  if (!embedderPromise) {
-    embedderPromise = pipeline(
-      "feature-extraction",
-      "Xenova/all-MiniLM-L6-v2"
-    ).then(model => {
-      console.log("✅ Local embedding model loaded");
-      return model;
-    });
-  }
-  return embedderPromise;
+// async function loadEmbedder() {
+//   if (!embedderPromise) {
+//     embedderPromise = pipeline(
+//       "feature-extraction",
+//       "Xenova/all-MiniLM-L6-v2"
+//     ).then(model => {
+//       console.log("✅ Local embedding model loaded");
+//       return model;
+//     });
+//   }
+//   return embedderPromise;
+// }
+async function getEmbedding(text) {
+  const response = await axios.post(
+    "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=" + VERTEX_API_KEY,
+    {
+      content: {
+        parts: [{ text }]
+      }
+    }
+  );
+
+  return response.data.embedding.values;
 }
 
 
 
-let embeddingQueue = Promise.resolve();
+// let embeddingQueue = Promise.resolve();
 
-async function getLocalEmbedding(text) {
-  embeddingQueue = embeddingQueue.then(async () => {
-    const embedder = await loadEmbedder();
+// async function getLocalEmbedding(text) {
+//   embeddingQueue = embeddingQueue.then(async () => {
+//     const embedder = await loadEmbedder();
 
-    const output = await embedder(text, {
-      pooling: "mean",
-      normalize: true,
-    });
+//     const output = await embedder(text, {
+//       pooling: "mean",
+//       normalize: true,
+//     });
 
-    return Array.from(output.data);
-  });
+//     return Array.from(output.data);
+//   });
 
-  return embeddingQueue;
-}
+//   return embeddingQueue;
+// }
 
 function cosineSimilarity(a, b) {
   let dot = 0, normA = 0, normB = 0;
@@ -87,13 +99,13 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
     // 2️⃣ Create embeddings locally
     const embeddedChunks = [];
     for (const chunk of chunks) {
-      const embedding = await getLocalEmbedding(chunk);
+      const embedding = await getEmbedding(chunk.slice(0, 1000));;
       embeddedChunks.push({ text: chunk, embedding });
     }
 
     // 3️⃣ Embed query
     const query = "Analyze resume for ATS score, skills, grammar and improvements";
-    const queryEmbedding = await getLocalEmbedding(query);
+    const queryEmbedding = await getEmbedding(query);
 
     // 4️⃣ Retrieve top-K chunks (RAG CORE)
     const topChunks = embeddedChunks
