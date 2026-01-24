@@ -28,28 +28,40 @@ const upload = multer();
 
 const VERTEX_API_KEY = process.env.VERTEX_API_KEY;
 console.log("API KEY FOUND?", !!VERTEX_API_KEY);
-let embedder;
+let embedderPromise = null;
 
 async function loadEmbedder() {
-  if (!embedder) {
-    embedder = await pipeline(
+  if (!embedderPromise) {
+    embedderPromise = pipeline(
       "feature-extraction",
       "Xenova/all-MiniLM-L6-v2"
-    );
-    console.log("✅ Local embedding model loaded");
+    ).then(model => {
+      console.log("✅ Local embedding model loaded");
+      return model;
+    });
   }
+  return embedderPromise;
 }
+
+
+
+let embeddingQueue = Promise.resolve();
 
 async function getLocalEmbedding(text) {
-  await loadEmbedder();
+  embeddingQueue = embeddingQueue.then(async () => {
+    const embedder = await loadEmbedder();
 
-  const output = await embedder(text, {
-    pooling: "mean",
-    normalize: true,
+    const output = await embedder(text, {
+      pooling: "mean",
+      normalize: true,
+    });
+
+    return Array.from(output.data);
   });
 
-  return Array.from(output.data);
+  return embeddingQueue;
 }
+
 function cosineSimilarity(a, b) {
   let dot = 0, normA = 0, normB = 0;
 
@@ -69,8 +81,8 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
 
     const chunks = pdf.text
       .split("\n\n")
-      .filter(c => c.length > 200)
-      .slice(0, 10); // safe limit
+      .filter(c => c.length > 300)
+      .slice(0, 5); // safe limit
 
     // 2️⃣ Create embeddings locally
     const embeddedChunks = [];
@@ -120,6 +132,7 @@ ${topChunks}
         contents: [{ parts: [{ text: prompt }] }]
       }
     );
+    const embedding = response.data.embedding.values;
 
     const result =
       response.data.candidates?.[0]?.content?.parts?.[0]?.text ||
