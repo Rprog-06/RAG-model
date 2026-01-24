@@ -56,7 +56,7 @@ async function getEmbedding(text) {
         params: { key: VERTEX_API_KEY }
       }
   );
-  return response.data.embeddings[0].values;
+  return response.data.embeddings.values;
 } catch (error) {
  console.error(
       "❌ Gemini Embedding Error:",
