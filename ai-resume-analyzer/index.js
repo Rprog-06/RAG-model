@@ -43,20 +43,28 @@ console.log("API KEY FOUND?", !!VERTEX_API_KEY);
 //   return embedderPromise;
 // }
 async function getEmbedding(text) {
+  try{
   const response = await axios.post(
     "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=" + VERTEX_API_KEY,
     {
       content: {
+        role: "user",
         parts: [{ text }]
       }
-    }
+    },
+    {
+        params: { key: VERTEX_API_KEY }
+      }
   );
-   if (!response.data?.embeddings?.[0]?.values) {
-    console.error("Embedding response:", response.data);
-    throw new Error("Gemini embedding failed");
-  }
-
   return response.data.embeddings[0].values;
+} catch (error) {
+ console.error(
+      "❌ Gemini Embedding Error:",
+      err.response?.data || err.message
+    );
+    throw new Error("Gemini embedding failed");
+}
+ 
 }
 
 
@@ -103,7 +111,7 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
     // 2️⃣ Create embeddings locally
     const embeddedChunks = [];
     for (const chunk of chunks) {
-      const embedding = await getEmbedding(chunk.slice(0, 1000));;
+      const embedding = await getEmbedding(chunk.slice(0, 800));;
       embeddedChunks.push({ text: chunk, embedding });
     }
 
