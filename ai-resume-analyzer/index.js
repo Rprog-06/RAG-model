@@ -56,7 +56,19 @@ async function getEmbedding(text) {
         params: { key: VERTEX_API_KEY }
       }
   );
-  return response.data.embeddings.values;
+ console.log("🔎 Gemini embedding raw response:", JSON.stringify(response.data));
+
+    // ✅ Handle ALL known Gemini shapes
+    const embedding =
+      response.data?.embedding?.values ||
+      response.data?.embedding?.value ||
+      response.data?.embeddings?.[0]?.values;
+
+    if (!embedding) {
+      throw new Error("Embedding vector not found in Gemini response");
+    }
+
+    return embedding;
 } catch (error) {
  console.error(
       "❌ Gemini Embedding Error:",
