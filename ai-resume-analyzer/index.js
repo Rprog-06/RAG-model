@@ -60,7 +60,7 @@ async function getEmbedding(text) {
 } catch (error) {
  console.error(
       "❌ Gemini Embedding Error:",
-      err.response?.data || err.message
+      error.response?.data || error.message
     );
     throw new Error("Gemini embedding failed");
 }
