@@ -1,3 +1,6 @@
+process.env.SHARP_IGNORE_GLOBAL_LIBVIPS = "1";
+process.env.DISABLE_SHARP = "true";
+
 import express from "express";
 import cors from "cors";
 import multer from "multer";
