@@ -51,8 +51,12 @@ async function getEmbedding(text) {
       }
     }
   );
+   if (!response.data?.embeddings?.[0]?.values) {
+    console.error("Embedding response:", response.data);
+    throw new Error("Gemini embedding failed");
+  }
 
-  return response.data.embedding.values;
+  return response.data.embeddings[0].values;
 }
 
 
@@ -144,7 +148,7 @@ ${topChunks}
         contents: [{ parts: [{ text: prompt }] }]
       }
     );
-    const embedding = response.data.embedding.values;
+    // const embedding = response.data.embedding.values;
 
     const result =
       response.data.candidates?.[0]?.content?.parts?.[0]?.text ||
